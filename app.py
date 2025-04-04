@@ -1,57 +1,39 @@
-
 import streamlit as st
 import pandas as pd
-from sklearn.svm import SVC
-from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import OneHotEncoder
-from sklearn.compose import ColumnTransformer
-from sklearn.pipeline import Pipeline
+import numpy as np
+from sklearn.linear_model import LinearRegression
 
-# Dados fictícios
+# Base de dados com duas variáveis
 dados = pd.DataFrame({
-    'valor': [100, 2000, 50, 9000, 70, 8000, 300, 7500, 120, 1800, 90, 9500, 60, 11000],
-    'transacoes_dia': [3, 25, 1, 30, 2, 28, 4, 22, 2, 20, 1, 35, 3, 40],
-    'pais': ['BR', 'RU', 'BR', 'CN', 'BR', 'RU', 'BR', 'RU', 'BR', 'US', 'BR', 'CN', 'BR', 'US'],
-    'fraude': [0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1]
+    'investimento': [10, 15, 20, 25, 30, 18, 28, 10, 12, 22],
+    'duracao': [7, 10, 15, 14, 20, 12, 18, 5, 10, 12],
+    'receita': [50, 65, 80, 90, 120, 75, 110, 35, 45, 80]
 })
 
-# Separando variáveis
-X = dados[['valor', 'transacoes_dia', 'pais']]
-y = dados['fraude']
+# Variáveis independentes e alvo
+X = dados[['investimento', 'duracao']]
+y = dados['receita']
 
-# Pipeline com pré-processamento e SVM
-preprocessador = ColumnTransformer(
-    transformers=[('pais', OneHotEncoder(drop='first'), ['pais'])],
-    remainder='passthrough'
-)
-pipeline = Pipeline([
-    ('preprocessamento', preprocessador),
-    ('classificador', SVC(kernel='rbf', C=1.0))
-])
-
-# Treinamento
-pipeline.fit(X, y)
+# Treinar modelo
+modelo = LinearRegression()
+modelo.fit(X, y)
 
 # Interface Streamlit
-st.title("🔍 Detecção de Fraude com SVM")
-st.write("Preveja se uma transação é fraudulenta com base em valor, transações diárias e país.")
+st.title("📈 Previsão de Receita com Regressão Linear")
+st.write("Este app prevê a receita com base no investimento em marketing e duração da campanha.")
 
 # Entradas do usuário
-valor = st.number_input("Valor da transação", min_value=1, max_value=20000, value=500)
-transacoes = st.slider("Número de transações do dia", 1, 50, 10)
-pais = st.selectbox("País de origem da transação", options=['BR', 'RU', 'CN', 'US'])
+investimento = st.number_input("Investimento em marketing (R$ mil)", min_value=1, max_value=100, value=20)
+duracao = st.number_input("Duração da campanha (dias)", min_value=1, max_value=60, value=10)
 
-# Previsão
-if st.button("🔎 Verificar"):
-    nova_transacao = pd.DataFrame({
-        'valor': [valor],
-        'transacoes_dia': [transacoes],
-        'pais': [pais]
-    })
+# Prever receita
+if st.button("🔍 Prever Receita"):
+    novo_exemplo = pd.DataFrame({'investimento': [investimento], 'duracao': [duracao]})
+    previsto = modelo.predict(novo_exemplo)
+    st.success(f"Receita prevista: R$ {previsto[0]:.2f} mil")
 
-    resultado = pipeline.predict(nova_transacao)[0]
-
-    if resultado == 1:
-        st.error("🚨 Transação suspeita: possivelmente **fraudulenta**.")
-    else:
-        st.success("✅ Transação considerada **legítima**.")
+# Mostrar coeficientes
+st.subheader("🧮 Detalhes do Modelo")
+st.write(f"Intercepto (β0): {modelo.intercept_:.2f}")
+st.write(f"Coeficiente β1 (Investimento): {modelo.coef_[0]:.2f}")
+st.write(f"Coeficiente β2 (Duração): {modelo.coef_[1]:.2f}")
