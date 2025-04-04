@@ -1,39 +1,33 @@
+
 import streamlit as st
 import pandas as pd
-import numpy as np
-from sklearn.linear_model import LinearRegression
+import matplotlib.pyplot as plt
+import seaborn as sns
 
-# Base de dados com duas variáveis
-dados = pd.DataFrame({
-    'investimento': [10, 15, 20, 25, 30, 18, 28, 10, 12, 22],
-    'duracao': [7, 10, 15, 14, 20, 12, 18, 5, 10, 12],
-    'receita': [50, 65, 80, 90, 120, 75, 110, 35, 45, 80]
-})
+# Carregar os dados
+@st.cache_data
+def carregar_dados():
+    return pd.read_csv("dados_tickets_clusters.csv")
 
-# Variáveis independentes e alvo
-X = dados[['investimento', 'duracao']]
-y = dados['receita']
+df = carregar_dados()
 
-# Treinar modelo
-modelo = LinearRegression()
-modelo.fit(X, y)
+st.title("Análise de Clusters de Tickets de Suporte - K-means")
 
-# Interface Streamlit
-st.title("📈 Previsão de Receita com Regressão Linear")
-st.write("Este app prevê a receita com base no investimento em marketing e duração da campanha.")
+# Mostrar o DataFrame
+st.subheader("Dados dos Tickets com Clusters")
+st.dataframe(df)
 
-# Entradas do usuário
-investimento = st.number_input("Investimento em marketing (R$ mil)", min_value=1, max_value=100, value=20)
-duracao = st.number_input("Duração da campanha (dias)", min_value=1, max_value=60, value=10)
+# Selecionar colunas para visualização
+st.subheader("Visualização Gráfica dos Clusters")
+x_axis = st.selectbox("Escolha a variável do eixo X", df.columns[:-1], index=0)
+y_axis = st.selectbox("Escolha a variável do eixo Y", df.columns[:-1], index=1)
 
-# Prever receita
-if st.button("🔍 Prever Receita"):
-    novo_exemplo = pd.DataFrame({'investimento': [investimento], 'duracao': [duracao]})
-    previsto = modelo.predict(novo_exemplo)
-    st.success(f"Receita prevista: R$ {previsto[0]:.2f} mil")
+# Gráfico de dispersão dos clusters
+plt.figure(figsize=(10, 6))
+sns.scatterplot(data=df, x=x_axis, y=y_axis, hue="cluster", palette="tab10", s=100)
+plt.title("Clusters de Tickets de Suporte")
+st.pyplot(plt)
 
-# Mostrar coeficientes
-st.subheader("🧮 Detalhes do Modelo")
-st.write(f"Intercepto (β0): {modelo.intercept_:.2f}")
-st.write(f"Coeficiente β1 (Investimento): {modelo.coef_[0]:.2f}")
-st.write(f"Coeficiente β2 (Duração): {modelo.coef_[1]:.2f}")
+# Estatísticas por cluster
+st.subheader("Estatísticas por Cluster")
+st.dataframe(df.groupby("cluster").mean(numeric_only=True))
