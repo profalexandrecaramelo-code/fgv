@@ -1,33 +1,41 @@
 
 import streamlit as st
-import pandas as pd
-import matplotlib.pyplot as plt
-import seaborn as sns
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.pipeline import Pipeline
 
-# Carregar os dados
-@st.cache_data
-def carregar_dados():
-    return pd.read_csv("dados_tickets_clusters.csv")
+# Dados de treino (exemplo)
+emails = [
+    "Oferta especial! Compre agora",
+    "Promoção exclusiva para você",
+    "Última chance",
+    "Documento solicitado",
+    "Reunião amanhã às 10h",
+    "Relatório financeiro do trimestre"
+]
+labels = [1, 1, 1, 0, 0, 0]  # 1 = spam, 0 = não spam
 
-df = carregar_dados()
+# Treinando o modelo com pipeline
+modelo = Pipeline([
+    ('vectorizer', CountVectorizer()),
+    ('classifier', MultinomialNB())
+])
+modelo.fit(emails, labels)
 
-st.title("Análise de Clusters de Tickets de Suporte - K-means")
+# Interface com Streamlit
+st.title("🔍 Classificador de E-mails Spam")
+st.write("Digite o conteúdo de um e-mail abaixo:")
 
-# Mostrar o DataFrame
-st.subheader("Dados dos Tickets com Clusters")
-st.dataframe(df)
+entrada = st.text_area("Texto do e-mail")
 
-# Selecionar colunas para visualização
-st.subheader("Visualização Gráfica dos Clusters")
-x_axis = st.selectbox("Escolha a variável do eixo X", df.columns[:-1], index=0)
-y_axis = st.selectbox("Escolha a variável do eixo Y", df.columns[:-1], index=1)
+if st.button("Classificar"):
+    if entrada.strip() == "":
+        st.warning("Por favor, digite um e-mail para classificar.")
+    else:
+        resultado = modelo.predict([entrada])[0]
+        prob = modelo.predict_proba([entrada])[0][1]
 
-# Gráfico de dispersão dos clusters
-plt.figure(figsize=(10, 6))
-sns.scatterplot(data=df, x=x_axis, y=y_axis, hue="cluster", palette="tab10", s=100)
-plt.title("Clusters de Tickets de Suporte")
-st.pyplot(plt)
-
-# Estatísticas por cluster
-st.subheader("Estatísticas por Cluster")
-st.dataframe(df.groupby("cluster").mean(numeric_only=True))
+        if resultado == 1:
+            st.error(f"🚨 Este e-mail foi classificado como **SPAM** (confiança: {prob:.2%})")
+        else:
+            st.success(f"✅ Este e-mail **não é SPAM** (confiança: {prob:.2%})")
