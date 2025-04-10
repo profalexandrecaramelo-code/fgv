@@ -4,15 +4,16 @@ import pandas as pd
 from mlxtend.frequent_patterns import apriori, association_rules
 
 st.set_page_config(page_title="Apriori - Análise de Cesta de Compras", layout="centered")
-st.title("🛒 Apriori: Regras de Associação")
+st.title("🛒 Apriori: Análise de Cesta de Compras (Versão Expandida)")
 
 st.markdown("""
 Este app demonstra como aplicar o algoritmo **Apriori** para descobrir **regras de associação**
 entre produtos em uma loja com base em transações de compra.
 """)
 
-# Dados simulados
+# Dados simulados com 22 transações
 st.subheader("📦 Dados de exemplo (transações)")
+
 data = [
     ['leite', 'pão', 'manteiga'],
     ['leite', 'pão'],
@@ -21,6 +22,21 @@ data = [
     ['leite', 'manteiga'],
     ['café', 'pão'],
     ['leite', 'pão', 'manteiga'],
+    ['café', 'biscoito'],
+    ['leite', 'biscoito'],
+    ['manteiga', 'biscoito'],
+    ['pão', 'queijo'],
+    ['leite', 'queijo'],
+    ['manteiga', 'queijo'],
+    ['leite', 'pão', 'queijo'],
+    ['leite', 'manteiga', 'biscoito'],
+    ['café', 'pão', 'biscoito'],
+    ['café', 'leite', 'pão'],
+    ['café', 'manteiga'],
+    ['leite', 'café', 'biscoito'],
+    ['pão', 'manteiga', 'biscoito'],
+    ['pão', 'leite', 'manteiga', 'café'],
+    ['queijo', 'café']
 ]
 
 df_exibicao = pd.DataFrame({'Transação': [i+1 for i in range(len(data))], 'Itens': [', '.join(t) for t in data]})
