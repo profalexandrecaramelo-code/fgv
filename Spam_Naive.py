@@ -9,11 +9,16 @@ emails = [
     "Oferta especial! Compre agora",
     "Promoção exclusiva para você",
     "Última chance",
+    "Grande oportunidade",
+    "Oportunidade especial",
+    "Basta clicar aqui",
+    "Seu prêmio aguarda",
     "Documento solicitado",
     "Reunião amanhã às 10h",
+    "Prezado colaborador",
     "Relatório financeiro do trimestre"
 ]
-labels = [1, 1, 1, 0, 0, 0]  # 1 = spam, 0 = não spam
+labels = [1, 1, 1, 1, 1, 1, 1, 0, 0, 0, 0]  # 1 = spam, 0 = não spam
 
 # Treinando o modelo com pipeline
 modelo = Pipeline([
