@@ -9,3 +9,4 @@ nltk
 spacy
 scipy
 xgboost
+shap
