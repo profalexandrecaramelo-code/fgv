@@ -4,7 +4,6 @@ import xgboost as xgb
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import classification_report
-import shap
 import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="IA vs Intuição: Previsão de Churn", layout="wide")
@@ -42,11 +41,6 @@ if uploaded_file:
 
     st.subheader("Top 5 Clientes com Maior Risco de Churn")
     st.dataframe(df_result_sorted[['customerID', 'Risco_de_Churn']].head(5))
-
-    # SHAP explanations (opcional)
-    st.subheader("Explicações do Modelo (SHAP)")
-    explainer = shap.Explainer(model, X)
-    shap_values = explainer(X)
 
     st.set_option('deprecation.showPyplotGlobalUse', False)
     fig = shap.plots.bar(shap_values[0], show=False)
