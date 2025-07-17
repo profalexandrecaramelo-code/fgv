@@ -44,7 +44,7 @@ if clientes_file:
 
 if transacoes_file:
     st.header("🔹 Regras de Associação com Apriori")
-    df_transacoes = pd.read_csv(transacoes_file, header=None)
+   transacoes = df_transacoes.apply(lambda row: [item for item in row if pd.notnull(item)], axis=1).tolist()
     st.subheader("Visualização das transações")
     st.dataframe(df_transacoes.head(10))
 
