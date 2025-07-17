@@ -52,7 +52,7 @@ if transacoes_file:
     min_support = st.slider("Suporte mínimo", 0.01, 0.5, 0.05, 0.01)
     min_conf = st.slider("Confiança mínima", 0.1, 1.0, 0.5, 0.05)
 
-    transacoes = df_transacoes.values.tolist()
+    transacoes = df_transacoes.apply(lambda row: [item for item in row if pd.notnull(item)], axis=1).tolist()
     te = TransactionEncoder()
     te_ary = te.fit(transacoes).transform(transacoes)
     df_encoded = pd.DataFrame(te_ary, columns=te.columns_)
