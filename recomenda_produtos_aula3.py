@@ -2,6 +2,7 @@ import streamlit as st
 import pandas as pd
 from sklearn.preprocessing import StandardScaler
 from sklearn.neighbors import KNeighborsClassifier
+import numpy as np
 
 st.title("Recomendação de Categorias de Compra com KNN")
 
@@ -41,12 +42,18 @@ if historico_file and atuais_file:
     modelo = KNeighborsClassifier(n_neighbors=k_valor)
     modelo.fit(X_train_scaled, y_train)
 
-    # Fazer previsões para os clientes atuais
+    # Fazer previsões e obter probabilidades
     previsoes = modelo.predict(X_test_scaled)
+    probabilidades = modelo.predict_proba(X_test_scaled)
     atuais['categoria_recomendada'] = previsoes
+    atuais['grau_confianca'] = np.max(probabilidades, axis=1)
 
-    st.subheader("Resultado da Recomendação")
-    st.dataframe(atuais[['cliente_id', 'categoria_recomendada']].head(10))
+    # Selecionar um cliente para exibição individual
+    cliente_escolhido = st.selectbox("Selecione um cliente atual para visualizar a recomendação:", atuais['cliente_id'])
+    cliente_detalhe = atuais[atuais['cliente_id'] == cliente_escolhido]
+
+    st.subheader("Recomendação para o cliente selecionado")
+    st.write(cliente_detalhe[['cliente_id', 'categoria_recomendada', 'grau_confianca']])
 
     # Download da base com recomendações
     csv_resultado = atuais.to_csv(index=False).encode('utf-8')
