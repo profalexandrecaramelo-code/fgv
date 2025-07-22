@@ -6,8 +6,8 @@ import numpy as np
 from collections import Counter
 
 st.title("Recomendação de Categorias de Compra com Algoritmo Supervisionado")
-st.header("Utilizar um sistema de IA baseado em KNN para recomendar categorias de compra a partir do perfil de clientes atuais, explorando o impacto do valor de K, o grau de confiança da previsão e a lógica de decisão dos vizinhos mais próximos.")
-st.subheader ("Você está atuando na equipe de marketing de uma empresa de e-commerce e precisa identificar a categoria de produto mais adequada para um grupo de novos clientes que ainda não realizaram compras. Para isso, um modelo de IA será treinado com o histórico de compras de 900 clientes reais e agora deve ser usado para prever o comportamento dos clientes novos.")
+st.markdown("Utilizar um sistema de IA baseado em KNN para recomendar categorias de compra a partir do perfil de clientes atuais, explorando o impacto do valor de K, o grau de confiança da previsão e a lógica de decisão dos vizinhos mais próximos.")
+st.markdown ("Você está atuando na equipe de marketing de uma empresa de e-commerce e precisa identificar a categoria de produto mais adequada para um grupo de novos clientes que ainda não realizaram compras. Para isso, um modelo de IA será treinado com o histórico de compras de 900 clientes reais e agora deve ser usado para prever o comportamento dos clientes novos.")
 
 st.markdown("Faça o upload de duas bases de dados:")
 
