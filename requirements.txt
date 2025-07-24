@@ -10,3 +10,4 @@ spacy
 scipy
 xgboost
 shap
+tensorflow
