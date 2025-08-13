@@ -1,13 +1,13 @@
-# streamlit_app.py
+# streamlit_app.py (tarefa1_supervisionado_v2)
 # ------------------------------------------------------
 # Exercício: Avaliação Executiva de um Sistema de IA (Supervisionado)
 # Requisitos do professor:
 # 1) Apresentar um problema de negócio.
 # 2) Upload de base histórica e split 70/30 (treino/teste).
-# 3) O sistema usa IA supervisionada e resolve PARCIALMENTE o problema.
+# 3) O sistema usa IA SUPERVISIONADA e resolve PARCIALMENTE o problema.
 # 4) Exibir APENAS a ACURÁCIA.
-# 5) Exibir a base utilizada (mesmo com erros).
-# 6) Apontar ONDE há erros na base, colorindo as células problemáticas.
+# 5) Exibir a base utilizada (mesmo com erros) e DESTACAR erros por cor.
+# 6) Permitir inserir UMA NOVA BASE (sem alvo) para obter as PREDIÇÕES do sistema.
 # As equipes analisam e propõem ações do EXECUTIVO com base nos 10 passos.
 # ------------------------------------------------------
 
@@ -31,10 +31,17 @@ st.markdown(
     """
     ### 🧩 Problema de Negócio (Exemplo)
     A empresa **Entrega Rápida** sofre com **atrasos nas entregas** e quer **priorizar pedidos** com maior risco de atraso.
-    Seu papel é **avaliar um sistema de IA supervisionado** (prototipado) que **busca resolver** o problema e decidir **ações executivas**.
 
-    **O que o sistema faz:** treina um modelo simples em 70% dos dados e mede **a acurácia** em 30% dos dados.
-    **O que cabe à equipe:** interpretar o resultado, analisar a qualidade da base e propor decisões executivas.
+    **Tipo de IA utilizado:** este sistema é de **aprendizado supervisionado**.
+
+    **Como o sistema pretende resolver o problema:**
+    1. A equipe **faz upload** de uma base histórica com uma **coluna alvo** (ex.: `atraso`, `target`, `label`, `classe`) indicando se o pedido atrasou (1) ou não (0).
+    2. O sistema faz um **split 70%/30%** (treino/teste), treina um **modelo baseline (Regressão Logística)** e mede **apenas a acurácia** no conjunto de **teste**.
+    3. A acurácia indica **o quanto o modelo acerta** ao classificar atrasos vs. não atrasos. É uma **solução parcial**: serve para discutir se **ajuda a priorizar** pedidos com risco, **quais dados faltam** e **quais políticas** o executivo deve definir para o próximo ciclo.
+
+    **O que o sistema NÃO faz (de propósito neste exercício):**
+    - Não apresenta outras métricas (ex.: recall, F1) — a ideia é provocar a discussão sobre **suficiência da acurácia**.
+    - Não corrige automaticamente os erros da base; apenas **destaca** onde estão, para apoiar **decisões executivas** sobre qualidade de dados.
     """
 )
 
@@ -56,34 +63,22 @@ except Exception:
     file.seek(0)
     df_raw = pd.read_csv(file, sep=';')
 
-# 5) Exibir a base (mesmo com erros) + 6) Destacar erros por cor
+# 5) Exibir a base (mesmo com erros) + Destacar erros por cor
 st.header("2) Base Utilizada e Erros Destacados")
 
-# Heurísticas simples de detecção de problemas (células):
-# - Valores faltantes (NaN)
-# - Linhas duplicadas (marca a linha toda)
-# - Tipagem inconsistente em colunas potencialmente numéricas (não-conversíveis)
-# - Valores fora de faixa numérica opcional (z-score > 4) como possível outlier (fraco indicativo de erro)
-
-# Duplicados (boolean mask por linha)
+# Heurísticas de problemas: faltantes, duplicados, tipagem inconsistente, outliers (z>4)
 dup_mask = df_raw.duplicated(keep=False)
-
-# Tentar identificar colunas "numericáveis"
 convertible_numeric = []
 non_numeric_cells = pd.DataFrame(False, index=df_raw.index, columns=df_raw.columns)
 for c in df_raw.columns:
-    # Tenta converter e vê quantos viram NaN a mais do que já eram NaN
     try:
         coerced = pd.to_numeric(df_raw[c], errors='coerce')
-        # Marca como potencialmente numérica se pelo menos metade converteu
         if coerced.notna().mean() >= 0.5:
             convertible_numeric.append(c)
-            # Células originalmente não numéricas que viraram NaN diferem de NaN original
             non_numeric_cells[c] = coerced.isna() & (~df_raw[c].isna())
     except Exception:
         pass
 
-# Possíveis outliers por z-score > 4 apenas nas colunas convertible_numeric
 outlier_cells = pd.DataFrame(False, index=df_raw.index, columns=df_raw.columns)
 for c in convertible_numeric:
     coerced = pd.to_numeric(df_raw[c], errors='coerce')
@@ -93,29 +88,21 @@ for c in convertible_numeric:
         z = (coerced - m).abs() / s
         outlier_cells[c] = z > 4
 
-# Máscara de faltantes
 na_cells = df_raw.isna()
 
-# Função de estilo por célula
 def style_errors(val, row_idx, col_name):
     styles = []
-    # Ordem de prioridade: duplicado (linha), faltante, não-numérico indevido, outlier
     if dup_mask.iloc[row_idx]:
-        styles.append("background-color: #ffe0e0")  # vermelho claro para duplicados (linha inteira)
+        styles.append("background-color: #ffe0e0")  # duplicados (linha)
     if pd.isna(val):
-        styles.append("background-color: #fff3cd")  # amarelo claro para NaN
+        styles.append("background-color: #fff3cd")  # faltante
     if non_numeric_cells.loc[row_idx, col_name]:
-        styles.append("background-color: #e0f7ff")  # azul claro para tipagem inconsistente
+        styles.append("background-color: #e0f7ff")  # tipagem inconsistente
     if outlier_cells.loc[row_idx, col_name]:
-        styles.append("background-color: #e6ffe6")  # verde claro para outlier
+        styles.append("background-color: #e6ffe6")  # possível outlier
     return ";".join(styles) if styles else ""
 
-# Aplica Styler célula a célula
 styled = df_raw.style.format(precision=3)
-for r in range(len(df_raw)):
-    for c in df_raw.columns:
-        styled = styled.set_properties(subset=pd.IndexSlice[r, c], **{"background-color": None})
-
 styled = styled.apply(lambda s: [style_errors(v, s.index[i], s.name) for i, v in enumerate(s)], axis=0)
 
 st.caption("Cores: vermelho=duplicado (linha), amarelo=faltante, azul=tipagem inconsistente, verde=possível outlier.")
@@ -124,9 +111,8 @@ st.dataframe(styled, use_container_width=True)
 # 3) IA supervisionada simples (parcial): Logistic Regression
 st.header("3) Treino 70% / Teste 30% — IA Supervisionada (Protótipo Parcial)")
 
-# Seleção da coluna alvo (tentativa automática)
 def infer_target(df: pd.DataFrame):
-    for cand in ["target", "label", "classe", "y"]:
+    for cand in ["target", "label", "classe", "y", "atraso"]:
         if cand in df.columns:
             return cand
     return None
@@ -144,15 +130,15 @@ if label_col == "— selecione —":
 X = df_raw.drop(columns=[label_col])
 y = df_raw[label_col]
 
-# --- Tratamento de erros no ALVO (classe) ---
-st.warning("O sistema manterá os **erros na base**, mas **linhas sem alvo (classe NaN)** não podem treinar/testar. Elas serão removidas apenas para o modelo e listadas abaixo.")
+# Remover, APENAS para modelagem, linhas com alvo ausente
+st.warning("O sistema mantém a base com erros, mas **linhas sem alvo (classe NaN)** não podem treinar/testar. Elas serão removidas **apenas** para o modelo e listadas abaixo.")
 missing_target_idx = y[y.isna()].index.tolist()
 if missing_target_idx:
     st.write("Linhas removidas por alvo ausente:", missing_target_idx)
     X = X.drop(index=missing_target_idx)
     y = y.drop(index=missing_target_idx)
 
-# Identificação de tipos (recalcula após remover NaN do alvo)
+# Pré-processamento
 num_cols = X.select_dtypes(include=[np.number]).columns.tolist()
 cat_cols = X.columns.difference(num_cols).tolist()
 
@@ -166,7 +152,7 @@ pre = ColumnTransformer(
 model = LogisticRegression(max_iter=300)
 pipe = Pipeline(steps=[("pre", pre), ("clf", model)])
 
-# Estratifica apenas se viável (>=2 amostras por classe e sem NaN)
+# Split (estratificado se viável)
 strat = None
 if y.nunique() >= 2:
     class_counts = y.value_counts()
@@ -183,7 +169,7 @@ except ValueError as e:
         X, y, test_size=0.30, random_state=random_state
     )
 
-# Treina e mede APENAS acurácia
+# Treinar e medir APENAS acurácia
 pipe.fit(X_train, y_train)
 preds = pipe.predict(X_test)
 acc = accuracy_score(y_test, preds)
@@ -196,8 +182,32 @@ with col2:
 
 st.markdown("---")
 
-# 6) Guia de discussão focado no papel do EXECUTIVO 
-st.header("4) Discussão em Equipe — Ações do Executivo")
+# 5) Testar com uma **nova base** (inferência/predição)
+st.header("5) Testar com uma **nova base** — obter a resposta do sistema")
+st.caption("Envie um CSV **sem a coluna alvo** para obter as **predições** do modelo treinado acima.")
+new_file = st.file_uploader("📥 Envie um CSV para predição (mesmas colunas de entrada, sem a classe)", type=["csv"], key="novo")
+if new_file is not None:
+    try:
+        df_new = pd.read_csv(new_file)
+    except Exception:
+        new_file.seek(0)
+        df_new = pd.read_csv(new_file, sep=';')
+    st.write("Prévia da nova base:")
+    st.dataframe(df_new.head(), use_container_width=True)
+    try:
+        preds_new = pipe.predict(df_new)
+        out = df_new.copy()
+        out["predicao_atraso"] = preds_new
+        st.success("Predições geradas. Baixe o resultado para análise em equipe.")
+        st.dataframe(out.head(), use_container_width=True)
+        st.download_button("⬇️ Baixar predições (CSV)", data=out.to_csv(index=False).encode("utf-8"), file_name="predicoes_nova_base.csv", mime="text/csv")
+    except Exception as e:
+        st.warning(f"Não foi possível prever com a nova base: {e}")
+
+st.markdown("---")
+
+# 6) Discussão em Equipe — Ações do Executivo
+st.header("6) Discussão em Equipe — Ações do Executivo")
 st.markdown(
     """
     1. **Objetivos** — O sistema ajuda a atingir a meta de negócio? O que falta medir (ex.: recall de atrasos)?
@@ -214,4 +224,3 @@ st.markdown(
 )
 
 st.success("Objetivo pedagógico: evidenciar que **o executivo decide rumos e políticas** em TODAS as etapas, não apenas ao final.")
-
