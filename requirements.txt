@@ -1,12 +1,12 @@
-streamlit
-pandas
-numpy
-scikit-learn
 matplotlib
 seaborn
 mlxtend
 nltk
 spacy
-scipy
 xgboost
 shap
+streamlit>=1.36
+pandas>=2.2
+numpy>=1.26
+scipy>=1.10,<2.0
+scikit-learn>=1.5.0
