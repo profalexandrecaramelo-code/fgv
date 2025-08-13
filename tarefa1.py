@@ -39,8 +39,8 @@ st.markdown(
     2. O sistema faz um **split 70%/30%** (treino/teste), treina um **modelo baseline (Regressão Logística)** e mede **apenas a acurácia** no conjunto de **teste**.
     3. A acurácia indica **o quanto o modelo acerta** ao classificar atrasos vs. não atrasos. É uma **solução parcial**: serve para discutir se **ajuda a priorizar** pedidos com risco, **quais dados faltam** e **quais políticas** o executivo deve definir para o próximo ciclo.
 
-    **O que o sistema NÃO faz (de propósito neste exercício):**
-    - Não apresenta outras métricas (ex.: recall, F1) — a ideia é provocar a discussão sobre **suficiência da acurácia**.
+    **O que o sistema NÃO faz:**
+    - Não apresenta outras métricas **.
     - Não corrige automaticamente os erros da base; apenas **destaca** onde estão, para apoiar **decisões executivas** sobre qualidade de dados.
     """
 )
@@ -210,15 +210,15 @@ st.markdown("---")
 st.header("6) Discussão em Equipe — Ações do Executivo")
 st.markdown(
     """
-    1. **Objetivos** — O sistema ajuda a atingir a meta de negócio? O que falta medir (ex.: recall de atrasos)?
-    2. **Fontes de dados** — Há fontes críticas faltando (ex.: clima em tempo real)? O executivo pode habilitar acesso?
-    3. **Refinamento** — Os erros destacados (faltantes, duplicados, tipos) comprometem decisões? Quais políticas de qualidade aprovar?
-    4. **Variáveis** — Quais atributos devem ser **exigidos** ou criados (ex.: densidade de paradas, janela de despacho)?
+    1. **Objetivos** — O sistema ajuda a atingir a meta de negócio? 
+    2. **Fontes de dados** — Há fontes críticas faltando? 
+    3. **Refinamento** — Os erros destacados (faltantes, duplicados, tipos) comprometem decisões? 
+    4. **Variáveis** — Quais atributos devem ser **exigidos** ou criados?
     5. **Restrições** — Há requisitos de explicabilidade, tempo de resposta ou custo a reforçar antes do próximo ciclo?
     6. **Aprendizado** — O tipo (supervisionado) é adequado? Precisamos rotular melhor os dados (definições claras de atraso)?
     7. **Algoritmo** — Mesmo exibindo só acurácia, precisamos autorizar testes com alternativas mais explicáveis/robustas?
     8. **Treinamento** — O 70/30 está ok? Precisamos de política de versão de modelos e dados?
-    9. **Avaliação** — Só acurácia basta para o risco? Que **métrica mandatória** o executivo exige no próximo ciclo?
+    9. **Avaliação** — Só acurácia basta para o risco? 
     10. **Implantação/Monitoramento** — Se fosse para produção, que SLAs e auditorias o executivo cobraria?
     """
 )
