@@ -31,10 +31,10 @@ st.markdown(
     """
     ### 🧩 Problema de Negócio (Exemplo)
     A empresa **Entrega Rápida** sofre com **atrasos nas entregas** e quer **priorizar pedidos** com maior risco de atraso.
-    Seu papel é **avaliar um sistema de IA supervisionado** (prototipado) que **resolve parcialmente** o problema e decidir **ações executivas**.
+    Seu papel é **avaliar um sistema de IA supervisionado** (prototipado) que **busca resolver** o problema e decidir **ações executivas**.
 
-    **O que o sistema faz:** treina um modelo simples em 70% dos dados e mede **apenas a acurácia** em 30% dos dados.
-    **O que cabe à equipe:** interpretar o resultado, analisar a qualidade da base (com erros) e propor decisões executivas.
+    **O que o sistema faz:** treina um modelo simples em 70% dos dados e mede **a acurácia** em 30% dos dados.
+    **O que cabe à equipe:** interpretar o resultado, analisar a qualidade da base e propor decisões executivas.
     """
 )
 
@@ -196,11 +196,11 @@ with col2:
 
 st.markdown("---")
 
-# 6) Guia de discussão focado no papel do EXECUTIVO pelos 10 passos
-st.header("4) Discussão em Equipe — Ações do Executivo (10 Passos)")
+# 6) Guia de discussão focado no papel do EXECUTIVO 
+st.header("4) Discussão em Equipe — Ações do Executivo")
 st.markdown(
     """
-    1. **Objetivos** — A acurácia apresentada ajuda a atingir a meta de negócio? O que falta medir (ex.: recall de atrasos)?
+    1. **Objetivos** — O sistema ajuda a atingir a meta de negócio? O que falta medir (ex.: recall de atrasos)?
     2. **Fontes de dados** — Há fontes críticas faltando (ex.: clima em tempo real)? O executivo pode habilitar acesso?
     3. **Refinamento** — Os erros destacados (faltantes, duplicados, tipos) comprometem decisões? Quais políticas de qualidade aprovar?
     4. **Variáveis** — Quais atributos devem ser **exigidos** ou criados (ex.: densidade de paradas, janela de despacho)?
