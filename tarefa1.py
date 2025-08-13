@@ -144,7 +144,15 @@ if label_col == "— selecione —":
 X = df_raw.drop(columns=[label_col])
 y = df_raw[label_col]
 
-# Identificação de tipos
+# --- Tratamento de erros no ALVO (classe) ---
+st.warning("O sistema manterá os **erros na base**, mas **linhas sem alvo (classe NaN)** não podem treinar/testar. Elas serão removidas apenas para o modelo e listadas abaixo.")
+missing_target_idx = y[y.isna()].index.tolist()
+if missing_target_idx:
+    st.write("Linhas removidas por alvo ausente:", missing_target_idx)
+    X = X.drop(index=missing_target_idx)
+    y = y.drop(index=missing_target_idx)
+
+# Identificação de tipos (recalcula após remover NaN do alvo)
 num_cols = X.select_dtypes(include=[np.number]).columns.tolist()
 cat_cols = X.columns.difference(num_cols).tolist()
 
@@ -158,9 +166,22 @@ pre = ColumnTransformer(
 model = LogisticRegression(max_iter=300)
 pipe = Pipeline(steps=[("pre", pre), ("clf", model)])
 
-# Estratifica se for classificação com poucas classes
-strat = y if y.nunique() <= 20 else None
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.30, random_state=random_state, stratify=strat)
+# Estratifica apenas se viável (>=2 amostras por classe e sem NaN)
+strat = None
+if y.nunique() >= 2:
+    class_counts = y.value_counts()
+    if class_counts.min() >= 2:
+        strat = y
+
+try:
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.30, random_state=random_state, stratify=strat
+    )
+except ValueError as e:
+    st.warning(f"Split estratificado falhou ({e}). Usando split simples não estratificado.")
+    X_train, X_test, y_train, y_test = train_test_split(
+        X, y, test_size=0.30, random_state=random_state
+    )
 
 # Treina e mede APENAS acurácia
 pipe.fit(X_train, y_train)
@@ -193,3 +214,4 @@ st.markdown(
 )
 
 st.success("Objetivo pedagógico: evidenciar que **o executivo decide rumos e políticas** em TODAS as etapas, não apenas ao final.")
+
