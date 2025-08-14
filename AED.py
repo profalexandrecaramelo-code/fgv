@@ -5,7 +5,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 
 st.set_page_config(page_title="AED - Análise Exploratória de Dados", page_icon="📊", layout="wide")
-st.title("📊 Atividade em Equipe")
+st.title("📊 Atividade em Equipe - Análise Exploratória de Dados")
 st.caption("Carregue um CSV ou use a base fornecida. Identifique problemas de **Completude**, **Consistência**, **Unicidade** e **Outliers (IQR)**. Gere uma **base limpa**.")
 
 @st.cache_data
