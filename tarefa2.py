@@ -8,9 +8,9 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.pipeline import Pipeline
 from sklearn.linear_model import LogisticRegression
-from sklearn.metrics import accuracy_score, precision_score, recall_score, confusion_matrix
+from sklearn.metrics import accuracy_score, precision_score, recall_score
 
-st.set_page_config(page_title="Campanha de E-commerce — Métricas (Acurácia, Precisão, Recall)", layout="wide")
+st.set_page_config(page_title="Campanha de E-commerce — Avaliação (foco em Recall)", layout="wide")
 
 st.title("🛍️ Campanha de E-commerce — Avaliação de Classificação (foco em Recall)")
 
@@ -26,8 +26,8 @@ with st.expander("ℹ️ O que este app faz?", expanded=True):
         """
         1. **Treina e valida** um classificador (Logistic Regression).  
         2. Calcula **Acurácia, Precisão e Recall** na **validação**.  
-        3. **Explica como cada métrica foi obtida**, exibindo os valores usados no cálculo.  
-        4. Gera **predições** para a base **sem rótulo** e disponibiliza para download.
+        3. **Não** exibe o cálculo detalhado; os alunos devem **reproduzir as contas**.  
+        4. Gera **predições** para a base **sem rótulo** e **mostra apenas quem o modelo prevê que comprará**, com destaque do **canal preferido**.
         """
     )
 
@@ -72,7 +72,7 @@ if df_train is not None:
 
     transformers = []
     if cat_cols:
-        transformers.append(("cat", OneHotEncoder(handle_unknown="ignore", sparse_output=False), cat_cols))
+        transformers.append(("cat", OneHotEncoder(handle_unknown="ignore", sparse=False), cat_cols))
     if num_cols:
         transformers.append(("num", StandardScaler() if standardize_numeric else "passthrough", num_cols))
 
@@ -90,67 +90,45 @@ if df_train is not None:
     pipe.fit(X_train, y_train)
     y_pred = pipe.predict(X_test)
 
-    # Métricas
+    # Métricas (sem detalhamento)
     acc = accuracy_score(y_test, y_pred)
-    # Consideramos 1 como a classe "comprou"
     prec = precision_score(y_test, y_pred, pos_label=1, zero_division=0)
     rec = recall_score(y_test, y_pred, pos_label=1, zero_division=0)
 
-    # Valores para a explicação (sem exibir a matriz gráfica)
-    labels = np.unique(y_test)
-    cm = confusion_matrix(y_test, y_pred, labels=labels)
-    # Mapear VP, FP, FN, VN para binário {0,1} se possível
-    # Assumindo labels ordenados; se binário (0,1): 
-    # linha = real, coluna = previsto
-    vp = fp = fn = vn = None
-    if set(labels) == {0,1}:
-        vn = int(cm[0,0])
-        fp = int(cm[0,1])
-        fn = int(cm[1,0])
-        vp = int(cm[1,1])
-
-    st.markdown("### ✅ Métricas na validação")
     c1, c2, c3 = st.columns(3)
     c1.metric("Acurácia", f"{acc:.3f}")
     c2.metric("Precisão", f"{prec:.3f}")
     c3.metric("Recall (foco)", f"{rec:.3f}")
 
-    st.markdown("### 📘 Como o sistema chegou a esses valores")
-    if vp is not None:
-        total = vn + fp + fn + vp
-        st.markdown(
-            f"""
-            **Definições (classe positiva = 1 — *comprou_pos_campanha*):**  
-            • **VP (Verdadeiro Positivo)**: previu **1** e o real era **1** → **{vp}**  
-            • **FP (Falso Positivo)**: previu **1** e o real era **0** → **{fp}**  
-            • **FN (Falso Negativo)**: previu **0** e o real era **1** → **{fn}**  
-            • **VN (Verdadeiro Negativo)**: previu **0** e o real era **0** → **{vn}**  
-            • **Total**: **{total}**
-
-            **Fórmulas aplicadas com os valores acima:**  
-            • **Acurácia** = (VP + VN) / Total = ({vp} + {vn}) / {total} = **{(vp+vn)/total:.3f}**  
-            • **Precisão** = VP / (VP + FP) = {vp} / ({vp} + {fp}) = **{(vp/(vp+fp) if (vp+fp)>0 else 0):.3f}**  
-            • **Recall** = VP / (VP + FN) = {vp} / ({vp} + {fn}) = **{(vp/(vp+fn) if (vp+fn)>0 else 0):.3f}**
-            """
-        )
-    else:
-        st.info("Métricas explicadas: para problemas multiclasse, as fórmulas são generalizadas (média macro).")
-
     st.markdown("---")
-    st.markdown("### 🔮 Predições para a base **sem rótulo**")
+    st.markdown("### 🔮 Predições (apenas **comprará**)")
     if df_pred is not None:
         X_deploy = df_pred.copy()
         y_pred_deploy = pipe.predict(X_deploy)
 
-        # Saída final exibida no sistema
         df_out = df_pred.copy()
         df_out["Predicao"] = y_pred_deploy
-        st.dataframe(df_out.head(50))
-        csv_bytes = df_out.to_csv(index=False).encode("utf-8")
-        st.download_button("⬇️ Baixar predições (.csv)", data=csv_bytes, file_name="predicoes.csv", mime="text/csv")
+
+        # Filtrar apenas os previstos como 1 (comprará)
+        df_pos = df_out[df_out["Predicao"] == 1].copy()
+
+        if df_pos.empty:
+            st.info("Nenhum cliente previsto como 'comprará' para a base enviada.")
+        else:
+            # Destaque azul na coluna 'canal_preferido' usando pandas Styler
+            def highlight_channel_col(s):
+                # color entire column if it's 'canal_preferido'
+                return ['background-color: #D0E8FF' if s.name == 'canal_preferido' else '' for _ in s]
+
+            styled = df_pos.style.apply(highlight_channel_col, axis=0)
+            st.dataframe(styled, use_container_width=True)
+
+            # Download apenas do grupo previsto como comprará
+            csv_bytes = df_pos.to_csv(index=False).encode("utf-8")
+            st.download_button("⬇️ Baixar predições (apenas 'comprará')", data=csv_bytes, file_name="predicoes_comprara.csv", mime="text/csv")
 
 else:
     st.info("Envie a base de treino/validação (com `comprou_pos_campanha`) para continuar.")
 
 st.markdown("---")
-st.caption("Lembrete: **Recall = VP / (VP + FN)**. Em campanhas, perder compradores reais (FN) é mais caro; por isso priorizamos sensibilidade.")
+st.caption("Lembrete: **Recall = VP / (VP + FN)**. Os alunos devem reproduzir os cálculos detalhados com base nas saídas do app.")
