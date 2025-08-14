@@ -65,6 +65,23 @@ sel_cols = st.multiselect("Selecione colunas numéricas para avaliar outliers", 
 
 iqr_multiplier = st.slider("Fator multiplicador do IQR (padrão=1.5)", min_value=0.5, max_value=3.0, value=1.5, step=0.1)
 
+
+st.markdown("### 📖 O que é IQR (Intervalo Interquartílico)")
+st.write(
+    "O **IQR** (Interquartile Range) mede a variação dos 50% centrais dos dados, calculado como `Q3 - Q1`. "
+    "Valores muito abaixo de `Q1 - k×IQR` ou muito acima de `Q3 + k×IQR` são considerados **outliers**. "
+    "O fator `k` geralmente é 1.5."
+)
+
+import matplotlib.pyplot as plt
+
+if sel_cols:
+    col_plot = sel_cols[0]  # mostrar para a primeira coluna selecionada
+    fig, ax = plt.subplots(figsize=(6, 2))
+    ax.boxplot(df[col_plot].dropna(), vert=False)
+    ax.set_title(f"Boxplot de {col_plot} (com outliers)")
+    st.pyplot(fig)
+
 def iqr_bounds(s, k=1.5):
     q1 = s.quantile(0.25)
     q3 = s.quantile(0.75)
