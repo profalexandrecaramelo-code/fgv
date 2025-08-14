@@ -4,9 +4,9 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 
-st.set_page_config(page_title="AED – Inspeção, Qualidade (3Cs) & Outliers", page_icon="📊", layout="wide")
-st.title("📊 AED – Inspeção + Qualidade (Completude, Consistência, Unicidade) + Outliers")
-st.caption("Carregue um CSV ou use a base fictícia. Identifique problemas de **Completude**, **Consistência**, **Unicidade** e **Outliers (IQR)**. Gere uma **base limpa**.")
+st.set_page_config(page_title="AED - Análise Exploratória de Dados", page_icon="📊", layout="wide")
+st.title("📊 Atividade em Equipe")
+st.caption("Carregue um CSV ou use a base fornecida. Identifique problemas de **Completude**, **Consistência**, **Unicidade** e **Outliers (IQR)**. Gere uma **base limpa**.")
 
 @st.cache_data
 def load_sample():
@@ -17,11 +17,11 @@ if uploaded is not None:
     df = pd.read_csv(uploaded)
     st.success("✅ Dataset carregado do upload.")
 else:
-    st.info("Usando a base fictícia `imoveis.csv` incluída no app.")
+    st.info("Use a base `imoveis.csv` incluída no app.")
     try:
         df = load_sample()
     except Exception:
-        st.error("A base fictícia não foi encontrada. Faça upload de um CSV.")
+        st.error("A base não foi encontrada. Faça upload de um CSV.")
         st.stop()
 
 # ---------- PASSO 1
