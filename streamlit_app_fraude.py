@@ -11,25 +11,20 @@ from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, precision_score, recall_score, confusion_matrix
 
 st.set_page_config(page_title="Detecção de Fraude — Precisão vs Recall (Exercício)", layout="wide")
-
 st.title("🛡️ Detecção de Fraude — Exercício Prático (Precisão × Recall)")
 
 st.markdown(
     """
-    **Objetivo do exercício:** entender o **trade-off entre Precisão e Recall** ajustando o **limiar de decisão** do mesmo modelo.
-    - **Config A (foco em Recall):** reduzir fraudes que passam (FN).
-    - **Config B (foco em Precisão):** reduzir alarmes falsos (FP).
-
-    Envie uma **base de treino/validação** (com a coluna alvo `fraude`) e, opcionalmente, uma **base de predição** (sem alvo).
-    Se preferir, clique em **Usar dados de exemplo** para carregar dados sintéticos.
+    **Objetivo:** entender o **trade-off entre Precisão e Recall** ajustando o **limiar de decisão** no **mesmo modelo**.
+    Agora o app calcula **somente na validação (train/test)** — **não** é necessário carregar base de predição.
     """
 )
 
 with st.sidebar:
-    st.header("Parâmetros do exercício")
+    st.header("Parâmetros")
     test_size = st.slider("Proporção de teste (validação)", 0.1, 0.5, 0.2, 0.05)
-    random_state = st.number_input("Random seed", min_value=0, value=42, step=1)
     standardize_numeric = st.checkbox("Padronizar variáveis numéricas (StandardScaler)", value=True)
+    class_balanced = st.checkbox("Usar class_weight='balanced' (opcional)", value=False)
     st.markdown("---")
     st.subheader("Limiar de decisão (probabilidade ≥ limiar ⇒ FRAUDE)")
     th_recall = st.slider("Config A — foco em Recall", 0.0, 1.0, 0.30, 0.01)
@@ -45,16 +40,16 @@ def make_ohe():
     except TypeError:
         return OneHotEncoder(handle_unknown="ignore", sparse=False)        # sklearn <1.2
 
-# Uploads
-st.subheader("1) Base de **Treino/Validação**")
+# Upload único (treino/validação)
+st.subheader("1) Base de **Treino/Validação** (obrigatória)")
 c1, c2 = st.columns([2,1])
 with c1:
     train_file = st.file_uploader("Envie CSV com a coluna alvo `fraude` (0/1)", type=["csv"], key="train")
 with c2:
     use_example = st.button("Usar dados de exemplo")
 
-df_train = None
 target_col = "fraude"
+df_train = None
 
 if use_example and train_file is None:
     st.info("Carregando dados de exemplo embutidos…")
@@ -63,6 +58,7 @@ if use_example and train_file is None:
     except Exception:
         st.warning("Dados de exemplo não encontrados no repositório. Faça upload manual do CSV com a coluna `fraude`.")
 elif train_file is not None:
+    # Tenta ler com vírgula e fallback para ';'
     try:
         df_train = pd.read_csv(train_file)
     except Exception:
@@ -70,23 +66,18 @@ elif train_file is not None:
         df_train = pd.read_csv(train_file, sep=";")
 
 if df_train is not None:
-    st.write("Pré-visualização (treino/validação):", df_train.head())
+    # Sanitização básica
     if target_col not in df_train.columns:
         st.error(f"A base deve conter a coluna alvo `{target_col}`.")
         df_train = None
+    else:
+        # Força 0/1 inteiros e remove NAs do alvo
+        df_train[target_col] = pd.to_numeric(df_train[target_col], errors="coerce").fillna(0).astype(int)
+        st.write("Pré-visualização:", df_train.head())
+        st.caption(f"Formato: {df_train.shape[0]} linhas × {df_train.shape[1]} colunas")
+        counts_all = df_train[target_col].value_counts().to_dict()
+        st.markdown(f"**Distribuição do alvo (dataset completo):** {counts_all}")
 
-st.subheader("2) Base de **Predição** (opcional, sem alvo)")
-pred_file = st.file_uploader("Envie CSV **sem** a coluna `fraude`", type=["csv"], key="pred")
-df_pred = None
-if pred_file is not None:
-    try:
-        df_pred = pd.read_csv(pred_file)
-    except Exception:
-        pred_file.seek(0)
-        df_pred = pd.read_csv(pred_file, sep=";")
-    st.write("Pré-visualização (predição):", df_pred.head())
-
-# Train & Evaluate
 if df_train is not None:
     X = df_train.drop(columns=[target_col])
     y = df_train[target_col]
@@ -101,14 +92,25 @@ if df_train is not None:
         transformers.append(("num", StandardScaler() if standardize_numeric else "passthrough", num_cols))
 
     preprocessor = ColumnTransformer(transformers=transformers, remainder="drop")
-    model = LogisticRegression(max_iter=1000)
+    model = LogisticRegression(max_iter=1000, class_weight=("balanced" if class_balanced else None))
     pipe = Pipeline([("prep", preprocessor), ("clf", model)])
 
-    stratify = y if y.nunique() > 1 else None
-    X_train, X_test, y_train, y_test = train_test_split(
-        X, y, test_size=test_size, random_state=random_state, stratify=stratify
-    )
+    # Split robusto: se o teste cair sem positivos/negativos, tentamos outros seeds automaticamente
+    def robust_split(X, y, test_size, max_tries=200):
+        for seed in range(1, max_tries+1):
+            X_tr, X_te, y_tr, y_te = train_test_split(X, y, test_size=test_size, random_state=seed, stratify=y if y.nunique()>1 else None)
+            if y_te.nunique() == 2:  # tem 0 e 1
+                return X_tr, X_te, y_tr, y_te, seed
+        # fallback: retorna último e avisa
+        return X_tr, X_te, y_tr, y_te, None
 
+    X_train, X_test, y_train, y_test, used_seed = robust_split(X, y, test_size=test_size)
+    if used_seed is None:
+        st.warning("Não foi possível garantir positivos e negativos no conjunto de teste. Ajuste o test_size ou verifique o alvo.")
+    else:
+        st.caption(f"Split estratificado com seed interno = **{used_seed}**")
+
+    # Treina
     pipe.fit(X_train, y_train)
     y_proba = pipe.predict_proba(X_test)[:, 1]
 
@@ -125,7 +127,16 @@ if df_train is not None:
     accA, precA, recA, vnA, fpA, fnA, vpA, costA, totA = eval_with_threshold(th_recall)
     accB, precB, recB, vnB, fpB, fnB, vpB, costB, totB = eval_with_threshold(th_precision)
 
-    st.markdown("### ✅ Resultados na validação (mesmo modelo, limiares diferentes)")
+    # Diagnóstico da base de teste
+    st.markdown("### 🔎 Diagnóstico da validação")
+    test_counts = y_test.value_counts().to_dict()
+    st.markdown(f"**Distribuição do alvo no teste:** {test_counts}")
+    if test_counts.get(1, 0) == 0:
+        st.error("O conjunto de teste não contém nenhum positivo (fraude). Ajuste o split ou revise a base.")
+    if test_counts.get(0, 0) == 0:
+        st.error("O conjunto de teste não contém nenhum negativo (legítima). Ajuste o split ou revise a base.")
+
+    st.markdown("### ✅ Resultados (mesmo modelo, limiares diferentes)")
     colA, colB = st.columns(2, gap="large")
     with colA:
         st.subheader("Config A — foco em Recall")
@@ -136,7 +147,7 @@ if df_train is not None:
         df_cm_A = pd.DataFrame([[vnA, fpA],[fnA, vpA]], index=["Real 0","Real 1"], columns=["Prev 0","Prev 1"])
         st.table(df_cm_A)
         st.caption(f"VP={vpA} • FP={fpA} • FN={fnA} • VN={vnA} • Total={totA}")
-        st.markdown(f"**Custo estimado do dia:** R$ {costA:,.2f}".replace(",", "X").replace(".", ",").replace("X","."))
+        st.caption("Obs: Se Recall=0 e Acurácia=1, geralmente o teste não tem positivos **ou** o limiar está alto demais para a prevalência.")
 
     with colB:
         st.subheader("Config B — foco em Precisão")
@@ -147,48 +158,16 @@ if df_train is not None:
         df_cm_B = pd.DataFrame([[vnB, fpB],[fnB, vpB]], index=["Real 0","Real 1"], columns=["Prev 0","Prev 1"])
         st.table(df_cm_B)
         st.caption(f"VP={vpB} • FP={fpB} • FN={fnB} • VN={vnB} • Total={totB}")
-        st.markdown(f"**Custo estimado do dia:** R$ {costB:,.2f}".replace(",", "X").replace(".", ",").replace("X","."))
 
     st.markdown("---")
-    st.markdown("### 🔮 Predições na base **sem rótulo** (opcional)")
-    if df_pred is not None:
-        proba_pred = pipe.predict_proba(df_pred)[:, 1]
-        df_pred_out = df_pred.copy()
-        df_pred_out["proba_fraude"] = proba_pred
-
-        tabA, tabB = st.tabs(["Config A (foco em Recall)", "Config B (foco em Precisão)"])
-        with tabA:
-            dfA = df_pred_out[df_pred_out["proba_fraude"] >= th_recall].copy()
-            dfA["flag_fraude_A"] = 1
-            st.write("Previstos como FRAUDE (Config A):", dfA.shape[0])
-            st.dataframe(dfA.head(100), use_container_width=True)
-            st.download_button("⬇️ Baixar FRAUDES — Config A", data=dfA.to_csv(index=False).encode("utf-8"),
-                               file_name="fraudes_configA.csv", mime="text/csv")
-        with tabB:
-            dfB = df_pred_out[df_pred_out["proba_fraude"] >= th_precision].copy()
-            dfB["flag_fraude_B"] = 1
-            st.write("Previstos como FRAUDE (Config B):", dfB.shape[0])
-            st.dataframe(dfB.head(100), use_container_width=True)
-            st.download_button("⬇️ Baixar FRAUDES — Config B", data=dfB.to_csv(index=False).encode("utf-8"),
-                               file_name="fraudes_configB.csv", mime="text/csv")
-
+    with st.expander("📌 Guia do exercício (resumo)", expanded=True):
+        st.markdown(
+            """
+            1) Ajuste os **limiares** A (Recall) e B (Precisão).  
+            2) Compare **Precisão, Recall, Acurácia** e **VP/FP/FN/VN**.  
+            3) Preencha os **custos** e identifique qual configuração **minimiza o custo total**.  
+            4) Explique o **trade-off** (o que muda quando você altera o limiar).  
+            """
+        )
 else:
     st.info("Envie a base de treino/validação (com `fraude`) ou clique em **Usar dados de exemplo** para começar.")
-
-st.markdown("---")
-with st.expander("📌 Guia do exercício (copie para o relatório)", expanded=True):
-    st.markdown(
-        """
-        **Passos:**
-        1) Carregue a base de treino (ou use os dados de exemplo) e defina os **limiares** das Configurações A e B.  
-        2) Compare **Precisão, Recall, Acurácia** e a **matriz de confusão** das duas configurações.  
-        3) Preencha o quadro de **custos** com seus valores (perda por fraude que passa; custo de revisão) e compare o **custo estimado**.  
-        4) (Opcional) Carregue a base de **predição**, baixe a lista de casos **marcados como fraude** em cada configuração.
-
-        **Perguntas para responder no relatório:**
-        - a) Qual configuração reduz mais a **perda total**? Justifique com os números.  
-        - b) Mostre o **trade-off**: o que acontece com FP, FN, Precisão e Recall quando você muda o **limiar**?  
-        - c) Proponha uma **política operacional** (ex.: usar Config A no pico, B fora do pico; ou thresholds por valor de compra).  
-        - d) Que **novas variáveis** ajudariam a melhorar Recall **sem** explodir FP? Dê 2 exemplos.
-        """
-    )
