@@ -47,11 +47,13 @@ rec = recall_score(y_test, y_pred, zero_division=0)
 # Usa os pesos e vieses aprendidos (coefs_ e intercepts_)
 num_params = sum(w.size for w in model.coefs_) + sum(b.size for b in model.intercepts_)
 
-col1, col2, col3, col4 = st.columns(4)
+num_samples = len(df)
+col1, col2, col3, col4, col5 = st.columns(5)
 col1.metric("Acurácia (teste)", f"{acc*100:.2f}%")
 col2.metric("Precisão (teste)", f"{prec*100:.2f}%")
 col3.metric("Recall (teste)", f"{rec*100:.2f}%")
 col4.metric("Parâmetros do modelo", f"{num_params:,}")
+col5.metric("Amostras na base", f"{num_samples:,}")
 
 st.markdown("---")
 st.markdown("### Simulação de um novo cliente")
@@ -88,6 +90,9 @@ pred = model.predict(input_scaled)[0]
 
 st.subheader("Resultado da Análise do Novo Cliente")
 st.metric("Probabilidade de Aprovação", f"{prob*100:.1f}%")
-st.success("Crédito Aprovado") if pred == 1 else st.error("Crédito Negado")
+if pred == 1:
+    st.success("Crédito Aprovado")
+else:
+    st.error("Crédito Negado")
 
 st.caption("Obs.: Este app mostra Acurácia, Precisão, Recall (conjunto de teste) e a **quantidade de parâmetros** aprendidos. Use o número de parâmetros para estimar o volume de dados necessário segundo a heurística discutida em aula.")
