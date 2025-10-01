@@ -197,9 +197,21 @@ if new_file is not None:
     try:
         preds_new = pipe.predict(df_new)
         out = df_new.copy()
-        out["predicao_atraso"] = preds_new
-        st.success("Predições geradas. Baixe o resultado para análise em equipe.")
-        st.dataframe(out.head(), use_container_width=True)
+out["predicao_atraso"] = preds_new
+
+# Mostrar apenas os pedidos com risco de atraso (predição = 1)
+atrasos = out[out["predicao_atraso"] == 1]
+
+st.success(f"Foram identificados {len(atrasos)} pedidos com risco de atraso.")
+st.dataframe(atrasos, use_container_width=True)
+
+# Botão para baixar todas as predições
+st.download_button(
+    "⬇️ Baixar todas as predições (CSV)",
+    data=out.to_csv(index=False).encode("utf-8"),
+    file_name="predicoes_nova_base.csv",
+    mime="text/csv"
+)
         st.download_button("⬇️ Baixar predições (CSV)", data=out.to_csv(index=False).encode("utf-8"), file_name="predicoes_nova_base.csv", mime="text/csv")
     except Exception as e:
         st.warning(f"Não foi possível prever com a nova base: {e}")
