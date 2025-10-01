@@ -171,24 +171,24 @@ if new_file is not None:
     st.write("Prévia da nova base:")
     st.dataframe(df_new.head(), use_container_width=True)
     try:
-    preds_new = pipe.predict(df_new)
-    out = df_new.copy()
-    out["predicao_atraso"] = preds_new
+        preds_new = pipe.predict(df_new)
+        out = df_new.copy()
+        out["predicao_atraso"] = preds_new
 
-    # 🔎 Mostrar apenas entregas com previsão de atraso
-    atrasos = out[out["predicao_atraso"] == 1]
-    st.success(f"Foram identificados {len(atrasos)} pedidos com risco de atraso.")
-    st.dataframe(atrasos, use_container_width=True)
+        # 🔎 Mostrar apenas entregas com previsão de atraso
+        atrasos = out[out["predicao_atraso"] == 1]
+        st.success(f"Foram identificados {len(atrasos)} pedidos com risco de atraso.")
+        st.dataframe(atrasos, use_container_width=True)
 
-    # Botão para baixar todas as predições
-    st.download_button(
+        # Botão para baixar todas as predições
+        st.download_button(
         "⬇️ Baixar todas as predições (CSV)",
         data=out.to_csv(index=False).encode("utf-8"),
         file_name="predicoes_nova_base.csv",
         mime="text/csv")
 
-    except Exception as e:
-    st.warning(f"Não foi possível prever com a nova base: {e}")
+        except Exception as e:
+        st.warning(f"Não foi possível prever com a nova base: {e}")
 
 # 6) Discussão em Equipe
 st.header("6) Discussão em Equipe — Ações do Executivo")
