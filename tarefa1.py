@@ -187,8 +187,7 @@ if new_file is not None:
         file_name="predicoes_nova_base.csv",
         mime="text/csv")
 
-        except Exception as e:
-        st.warning(f"Não foi possível prever com a nova base: {e}")
+        except Exception as e: st.warning(f"Não foi possível prever com a nova base: {e}")
 
 # 6) Discussão em Equipe
 st.header("6) Discussão em Equipe — Ações do Executivo")
