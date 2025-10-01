@@ -170,7 +170,7 @@ if new_file is not None:
         df_new = pd.read_csv(new_file, sep=';')
     st.write("Prévia da nova base:")
     st.dataframe(df_new.head(), use_container_width=True)
-   try:
+    try:
     preds_new = pipe.predict(df_new)
     out = df_new.copy()
     out["predicao_atraso"] = preds_new
@@ -187,7 +187,7 @@ if new_file is not None:
         file_name="predicoes_nova_base.csv",
         mime="text/csv")
 
-except Exception as e:
+    except Exception as e:
     st.warning(f"Não foi possível prever com a nova base: {e}")
 
 # 6) Discussão em Equipe
