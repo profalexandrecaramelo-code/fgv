@@ -182,7 +182,12 @@ st.success(f"Foram identificados {len(atrasos)} pedidos com risco de atraso.")
 st.dataframe(atrasos, use_container_width=True)
 
 # Botão para baixar todas as predições
-st.download_button("⬇️ Baixar todas as predições (CSV)",data=out.to_csv(index=False).encode("utf-8"),file_name="predicoes_nova_base.csv",mime="text/csv)
+st.download_button(
+    "⬇️ Baixar todas as predições (CSV)",
+    data=out.to_csv(index=False).encode("utf-8"),
+    file_name="predicoes_nova_base.csv",
+    mime="text/csv"
+)
     except Exception as e:
         st.warning(f"Não foi possível prever com a nova base: {e}")
 
