@@ -169,13 +169,13 @@ if new_file is not None:
         new_file.seek(0)
         df_new = pd.read_csv(new_file, sep=';')
     st.write("Prévia da nova base:")
-    st.dataframe(df_new.head(), use_container_width=True)
+    st.dataframe(df_new, use_container_width=True)
     try:
         preds_new = pipe.predict(df_new)
         out = df_new.copy()
         out["predicao_atraso"] = preds_new
         st.success("Predições geradas. Baixe o resultado para análise em equipe.")
-        st.dataframe(out.head(), use_container_width=True)
+        st.dataframe(out, use_container_width=True)
         st.download_button("⬇️ Baixar predições (CSV)", data=out.to_csv(index=False).encode("utf-8"), file_name="predicoes_nova_base.csv", mime="text/csv")
     except Exception as e:
         st.warning(f"Não foi possível prever com a nova base: {e}")
