@@ -197,3 +197,4 @@ st.markdown(
     """
 )
 st.success("Objetivo pedagógico: evidenciar que **o executivo decide rumos e políticas** em TODAS as etapas, não apenas ao final.")
+
