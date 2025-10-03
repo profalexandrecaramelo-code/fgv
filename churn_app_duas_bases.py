@@ -1,4 +1,3 @@
-
 import streamlit as st
 import pandas as pd
 import xgboost as xgb
@@ -6,29 +5,29 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import classification_report
 
-st.set_page_config(page_title="IA na Prevenção de Churn", layout="wide")
-st.title("📉 IA para Redução de Cancelamento de Clientes")
+st.set_page_config(page_title="AI for Churn Prevention", layout="wide" )
+st.title("📉 AI for Customer Churn Reduction")
 
 st.write("""
-Faça upload de duas bases de dados:
-1. Uma base **rotulada** com informações históricas de clientes (com campo 'Churn') — para treino e teste do modelo.
-2. Uma base **não rotulada** com clientes que devem ser avaliados (sem campo 'Churn') — para previsão de risco.
+Upload two datasets:
+1. A **labeled** dataset with historical customer information (with 'Churn' field) — for model training and testing.
+2. An **unlabeled** dataset with customers to be evaluated (without 'Churn' field) — for risk prediction.
 
-O sistema também sugerirá ações com base nos padrões dos clientes que **nunca cancelaram o serviço**.
+The system will also suggest actions based on patterns from customers who **never canceled the service**.
 """)
 
-# Upload da base de treino/teste
-st.subheader("📁 1. Base de Treino/Teste (com 'Churn')")
-train_file = st.file_uploader("Envie a base de dados rotulada", type=["csv"], key="train")
+# Upload training/testing dataset
+st.subheader("📁 1. Training/Testing Dataset (with 'Churn')")
+train_file = st.file_uploader("Upload the labeled dataset", type=["csv"], key="train")
 
-# Upload da base para avaliação
-st.subheader("📁 2. Base de Clientes para Avaliação (sem 'Churn')")
-predict_file = st.file_uploader("Envie a base de clientes para prever risco", type=["csv"], key="predict")
+# Upload evaluation dataset
+st.subheader("📁 2. Customer Dataset for Evaluation (without 'Churn')")
+predict_file = st.file_uploader("Upload customer dataset to predict risk", type=["csv"], key="predict")
 
 if train_file and predict_file:
-    # Carregar e preparar base de treino
+    # Load and prepare training dataset
     df = pd.read_csv(train_file)
-    st.success(f"Base de treino carregada com {df.shape[0]} clientes.")
+    st.success(f"Training dataset loaded with {df.shape[0]} customers.")
 
     df_clean = df.copy()
     df_clean.drop('customerID', axis=1, inplace=True, errors='ignore')
@@ -46,13 +45,12 @@ if train_file and predict_file:
     model.fit(X_train, y_train)
 
     y_pred = model.predict(X_test)
-    st.subheader("📊 Relatório de Desempenho do Modelo")
+    st.subheader("📊 Model Performance Report")
     report = classification_report(y_test, y_pred, output_dict=True)
-    st.dataframe(pd.DataFrame(report).transpose())
 
-    # Processar base de avaliação
+    # Process evaluation dataset
     st.markdown("---")
-    st.subheader("🔎 Avaliação de Novos Clientes")
+    st.subheader("🔎 New Customer Evaluation")
 
     df_new = pd.read_csv(predict_file)
     df_show = df_new.copy()
@@ -63,27 +61,27 @@ if train_file and predict_file:
         df_eval[col] = LabelEncoder().fit_transform(df_eval[col])
 
     preds_proba = model.predict_proba(df_eval)[:, 1]
-    df_show['Risco_de_Churn'] = preds_proba
-    df_show = df_show.sort_values(by='Risco_de_Churn', ascending=False)
-    st.write("Top 5 clientes com maior risco de cancelamento:")
+    df_show['Churn_Risk'] = preds_proba
+    df_show = df_show.sort_values(by='Churn_Risk', ascending=False)
+    st.write("Top 5 customers with highest churn risk:")
     st.dataframe(df_show.head(5))
 
-    # Sugerir ações com base nos clientes que não cancelaram
+    # Suggest actions based on customers who didn't churn
     st.markdown("---")
-    st.subheader("💡 Recomendações para Reduzir o Churn")
+    st.subheader("💡 Recommendations to Reduce Churn")
 
-    df_retidos = df[df['Churn'] == 'No'].copy()
-    comuns = df_retidos[['Contract', 'InternetService', 'tenure', 'MonthlyCharges']].mode().iloc[0]
+    df_retained = df[df['Churn'] == 'No'].copy()
+    common_patterns = df_retained[['Contract', 'InternetService', 'tenure', 'MonthlyCharges']].mode().iloc[0]
 
     st.markdown("""
-    Com base nos clientes que **nunca cancelaram**, recomendamos:
-    - 📌 **Tipo de contrato** mais estável: **{0}**
-    - 🌐 **Tipo de internet preferido**: **{1}**
-    - ⏱ **Manter clientes ativos por mais de** **{2} meses**
-    - 💰 **Cobrança mensal ideal abaixo de** **R$ {3}**
+    Based on customers who **never canceled**, we recommend:
+    - 📌 **Most stable contract type**: **{0}**
+    - 🌐 **Preferred internet service**: **{1}**
+    - ⏱ **Keep customers active for more than** **{2} months**
+    - 💰 **Ideal monthly charge below** **${3}**
     """.format(
-        comuns['Contract'],
-        comuns['InternetService'],
-        int(comuns['tenure']),
-        round(comuns['MonthlyCharges'], 2)
+        common_patterns['Contract'],
+        common_patterns['InternetService'],
+        int(common_patterns['tenure']),
+        round(common_patterns['MonthlyCharges'], 2)
     ))
