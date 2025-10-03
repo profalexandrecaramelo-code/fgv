@@ -73,17 +73,17 @@ if train_file and predict_file:
     st.subheader("💡 Recommendations to reduce Churn")
 
     df_retidos = df[df['Churn'] == 'No'].copy()
-    comuns = df_retidos[['Contract', 'InternetService', 'tenure', 'MonthlyCharges']].mode().iloc[0]
+    comuns = df_retidos[['Contract', 'MaintenanceService', 'tenure', 'MonthlyCharges']].mode().iloc[0]
 
     st.markdown("""
     Based on the list of customers that **never requested service disconnect**, please verifiy a recommendation:
     - 📌 **Type of contract** more stable: **{0}**
-    - 🌐 **Prefered type of internet service**: **{1}**
+    - 🌐 **Prefered type of Maintenance service**: **{1}**
     - ⏱ **Keep customers active for longer than** **{2} months**
     - 💰 **Ideal monthy recurring charge below ** **USD$ {3}**
     """.format(
         comuns['Contract'],
-        comuns['InternetService'],
+        comuns['MaintenanceService'],
         int(comuns['tenure']),
         round(comuns['MonthlyCharges'], 2)
     ))
