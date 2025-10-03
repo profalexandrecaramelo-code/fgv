@@ -6,29 +6,29 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.metrics import classification_report
 
-st.set_page_config(page_title="IA na Prevenção de Churn", layout="wide")
-st.title("📉 IA para Redução de Cancelamento de Clientes")
+st.set_page_config(page_title="AI in Churn prevention", layout="wide")
+st.title("📉 AI to reduce customer disconnects")
 
 st.write("""
-Faça upload de duas bases de dados:
-1. Uma base **rotulada** com informações históricas de clientes (com campo 'Churn') — para treino e teste do modelo.
-2. Uma base **não rotulada** com clientes que devem ser avaliados (sem campo 'Churn') — para previsão de risco.
+You will need to upload 2 datasets:
+1. One **labeled** with customers historical information (with field 'Churn') — for training and model testing.
+2. Two **unlabeled** with customers that must be evaluated (without field 'Churn') — for risk inference.
 
-O sistema também sugerirá ações com base nos padrões dos clientes que **nunca cancelaram o serviço**.
+This system will also suggest actions based on the patterns identified on customers that **never asked for a service disconnect**.
 """)
 
-# Upload da base de treino/teste
-st.subheader("📁 1. Base de Treino/Teste (com 'Churn')")
-train_file = st.file_uploader("Envie a base de dados rotulada", type=["csv"], key="train")
+# Upload training and test dataset
+st.subheader("📁 1. Training and testing dataset (with 'Churn')")
+train_file = st.file_uploader("Send the labeled dataset", type=["csv"], key="train")
 
-# Upload da base para avaliação
-st.subheader("📁 2. Base de Clientes para Avaliação (sem 'Churn')")
-predict_file = st.file_uploader("Envie a base de clientes para prever risco", type=["csv"], key="predict")
+# Upload evalution dataset
+st.subheader("📁 2. Evaluation dataset (without 'Churn')")
+predict_file = st.file_uploader("Send the customer dataset that we need to identify churn risks", type=["csv"], key="predict")
 
 if train_file and predict_file:
     # Carregar e preparar base de treino
     df = pd.read_csv(train_file)
-    st.success(f"Base de treino carregada com {df.shape[0]} clientes.")
+    st.success(f"Training dataset loaded with {df.shape[0]} customers.")
 
     df_clean = df.copy()
     df_clean.drop('customerID', axis=1, inplace=True, errors='ignore')
@@ -46,13 +46,13 @@ if train_file and predict_file:
     model.fit(X_train, y_train)
 
     y_pred = model.predict(X_test)
-    st.subheader("📊 Relatório de Desempenho do Modelo")
+    st.subheader("📊 Model Performance Report")
     report = classification_report(y_test, y_pred, output_dict=True)
     st.dataframe(pd.DataFrame(report).transpose())
 
-    # Processar base de avaliação
+    # Process evaluation dataset
     st.markdown("---")
-    st.subheader("🔎 Avaliação de Novos Clientes")
+    st.subheader("🔎 Evaluation of new customers")
 
     df_new = pd.read_csv(predict_file)
     df_show = df_new.copy()
@@ -63,24 +63,24 @@ if train_file and predict_file:
         df_eval[col] = LabelEncoder().fit_transform(df_eval[col])
 
     preds_proba = model.predict_proba(df_eval)[:, 1]
-    df_show['Risco_de_Churn'] = preds_proba
-    df_show = df_show.sort_values(by='Risco_de_Churn', ascending=False)
-    st.write("Top 5 clientes com maior risco de cancelamento:")
+    df_show['Churn_Risk'] = preds_proba
+    df_show = df_show.sort_values(by='Churn_Risk', ascending=False)
+    st.write("Top 5 customers with higher risk of service disconnect:")
     st.dataframe(df_show.head(5))
 
-    # Sugerir ações com base nos clientes que não cancelaram
+    # Suggest actions on customers that did not request service disconnect
     st.markdown("---")
-    st.subheader("💡 Recomendações para Reduzir o Churn")
+    st.subheader("💡 Recommendations to reduce Churn")
 
     df_retidos = df[df['Churn'] == 'No'].copy()
     comuns = df_retidos[['Contract', 'InternetService', 'tenure', 'MonthlyCharges']].mode().iloc[0]
 
     st.markdown("""
-    Com base nos clientes que **nunca cancelaram**, recomendamos:
-    - 📌 **Tipo de contrato** mais estável: **{0}**
-    - 🌐 **Tipo de internet preferido**: **{1}**
-    - ⏱ **Manter clientes ativos por mais de** **{2} meses**
-    - 💰 **Cobrança mensal ideal abaixo de** **R$ {3}**
+    Based on the list of customers that **never requested service disconnect**, please verifiy a recommendation:
+    - 📌 **Type of contract** more stable: **{0}**
+    - 🌐 **Prefered type of internet service**: **{1}**
+    - ⏱ **Keep customers active for longer than** **{2} months**
+    - 💰 **Ideal monthy recurring charge below ** **USD$ {3}**
     """.format(
         comuns['Contract'],
         comuns['InternetService'],
